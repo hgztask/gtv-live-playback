@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import gtvDataJson from './assets/yk.json'
 import {ref, watch} from "vue";
 import defUtils from "./utils/defUtils.ts";
+import axios from "axios";
 
 
 function paginateData(dataArray: any[], pageNumber: any, itemsPerPage = pageSize.value) {
@@ -17,6 +17,14 @@ function paginateData(dataArray: any[], pageNumber: any, itemsPerPage = pageSize
   // 返回截取后的分页数据
   return dataArray.slice(startIndex, endIndex);
 }
+
+// 获取gtv数据
+const getGtvDataJson = async () => {
+  const {data} = await axios.get('https://www.mikuchase.ltd/api/gtv/')
+  return data
+}
+
+const gtvDataJson: any = ref([])
 
 const showList: any = ref([])
 
@@ -38,18 +46,22 @@ const handleCurrentChange = (val: number) => {
     showList.value = paginateData(searchCacheShowList.value, val);
   }
 }
-
-showList.value = paginateData(gtvDataJson, 1);
-total.value = gtvDataJson.length;
+getGtvDataJson().then((res) => {
+  gtvDataJson.value = res
+  showList.value = paginateData(res, 1);
+  total.value = res.length;
+})
 
 watch(() => searchText.value, defUtils.debounce((searchVal: string) => {
   if (searchVal === "") {
-    showList.value = paginateData(gtvDataJson, 1);
-    total.value = gtvDataJson.length;
+    showList.value = paginateData(gtvDataJson.value, 1);
+    total.value = gtvDataJson.value.length;
     searchCacheShowList.value = [];
     return;
   }
-  const filter = gtvDataJson.filter(item => item.title.includes(searchVal));
+  const filter = gtvDataJson.value.filter((item: any) => {
+    return item.title.includes(searchVal);
+  });
   if (filter.length === 0) {
     showList.value = filter;
     total.value = 0;
