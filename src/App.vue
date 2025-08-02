@@ -18,9 +18,7 @@ function paginateData(dataArray: any[], pageNumber: any, itemsPerPage = pageSize
   return dataArray.slice(startIndex, endIndex);
 }
 
-const showList: {
-  value: any[]
-} = ref([])
+const showList: any = ref([])
 
 const searchText = ref('');
 
@@ -32,9 +30,7 @@ const pageSize: {
   value: number
 } = ref(50);
 
-const searchCacheShowList: {
-  value: any[]
-} = ref([])
+const searchCacheShowList: any = ref([])
 const handleCurrentChange = (val: number) => {
   if (searchCacheShowList.value.length === 0) {
     showList.value = paginateData(gtvDataJson, val);
