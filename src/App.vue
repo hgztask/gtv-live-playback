@@ -2,25 +2,29 @@
 import {ref, watch} from "vue";
 import defUtils from "./utils/defUtils.ts";
 import axios from "axios";
+import {batchAddVideoInfos, clearVideoInfos, getAllVideoInfos} from "./model/localDb.ts";
 
-
-function paginateData(dataArray: any[], pageNumber: any, itemsPerPage = pageSize.value) {
-  // 确保页码是正整数（最小为1）
-  const currentPage = Math.max(1, parseInt(pageNumber) || 1);
-
-  // 计算截取的起始索引（从0开始）
-  const startIndex = (currentPage - 1) * itemsPerPage;
-
-  // 计算结束索引（不超过数组长度）
-  const endIndex = Math.min(startIndex + itemsPerPage, dataArray.length);
-
-  // 返回截取后的分页数据
-  return dataArray.slice(startIndex, endIndex);
-}
 
 // 获取gtv数据
 const getGtvDataJson = async () => {
-  const {data} = await axios.get('https://www.mikuchase.ltd/api/gtv/')
+  const updateTIme = localStorage.getItem('update-time');
+  const currentDate = defUtils.getCurrentDate();
+  //同一天更新时间时直接取本地缓存
+  if (updateTIme === currentDate) {
+    console.log('使用缓存数据', updateTIme);
+    return getAllVideoInfos();
+  }
+  const url = import.meta.env.MODE === 'development' ? 'http://localhost:81/src/gtv/' : 'https://www.mikuchase.ltd/api/gtv/'
+  const {data} = await axios.get(url)
+  localStorage.setItem('update-time', currentDate);
+  //更新本地缓存
+  clearVideoInfos().then(() => {
+    return batchAddVideoInfos(data);
+  }).then(() => {
+    console.log('更新缓存成功');
+  }).catch((err) => {
+    console.log('更新缓存失败', err);
+  })
   return data
 }
 
@@ -34,27 +38,24 @@ const total: {
   value: number
 } = ref(0);
 
-const pageSize: {
-  value: number
-} = ref(50);
 
 const searchCacheShowList: any = ref([])
 const handleCurrentChange = (val: number) => {
   if (searchCacheShowList.value.length === 0) {
-    showList.value = paginateData(gtvDataJson, val);
+    showList.value = defUtils.paginateData(gtvDataJson.value, val);
   } else {
-    showList.value = paginateData(searchCacheShowList.value, val);
+    showList.value = defUtils.paginateData(searchCacheShowList.value, val);
   }
 }
 getGtvDataJson().then((res) => {
   gtvDataJson.value = res
-  showList.value = paginateData(res, 1);
+  showList.value = defUtils.paginateData(res, 1);
   total.value = res.length;
 })
 
 watch(() => searchText.value, defUtils.debounce((searchVal: string) => {
   if (searchVal === "") {
-    showList.value = paginateData(gtvDataJson.value, 1);
+    showList.value = defUtils.paginateData(gtvDataJson.value, 1);
     total.value = gtvDataJson.value.length;
     searchCacheShowList.value = [];
     return;
@@ -68,7 +69,7 @@ watch(() => searchText.value, defUtils.debounce((searchVal: string) => {
     return;
   }
   searchCacheShowList.value = filter
-  showList.value = paginateData(searchCacheShowList.value, 1);
+  showList.value = defUtils.paginateData(searchCacheShowList.value, 1);
   total.value = searchCacheShowList.value.length;
 }, 1000))
 
@@ -108,7 +109,7 @@ watch(() => searchText.value, defUtils.debounce((searchVal: string) => {
         </template>
       </el-table-column>
     </el-table>
-    <el-pagination :background="true" :page-size="pageSize"
+    <el-pagination :background="true" :page-size="50"
                    :total="total" @current-change="handleCurrentChange"/>
   </div>
   <el-backtop :bottom="100" :right="100"/>
