@@ -39,8 +39,14 @@ function paginateData(dataArray: any[], pageNumber: any, itemsPerPage = 50) {
 }
 
 
+//等待函数
+async function wait(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export default {
     debounce,
     getCurrentDate,
-    paginateData
+    paginateData,
+    wait
 }

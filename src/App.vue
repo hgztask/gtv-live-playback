@@ -38,6 +38,9 @@ const total: {
   value: number
 } = ref(0);
 
+const tableLoading: {
+  value: boolean
+} = ref(true);
 
 const searchCacheShowList: any = ref([])
 const handleCurrentChange = (val: number) => {
@@ -48,6 +51,7 @@ const handleCurrentChange = (val: number) => {
   }
 }
 getGtvDataJson().then((res) => {
+  tableLoading.value = false;
   gtvDataJson.value = res
   showList.value = defUtils.paginateData(res, 1);
   total.value = res.length;
@@ -88,7 +92,8 @@ watch(() => searchText.value, defUtils.debounce((searchVal: string) => {
         <el-input v-model.trim.lazy="searchText" placeholder="标题关键词"></el-input>
       </el-form-item>
     </el-form>
-    <el-table :data="showList" border stripe style="width: 100%">
+    <el-table v-loading="tableLoading" :data="showList" border element-loading-text="加载中..." stripe
+              style="width: 100%">
       <el-table-column label="封面" width="220">
         <template #default="scope">
           <el-link :href="scope.row.url" target="_blank">
